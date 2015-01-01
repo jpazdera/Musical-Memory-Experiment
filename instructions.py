@@ -1,4 +1,4 @@
-def display_main_instructions():
+def main_instructions():
     print 'Welcome to the experiment!\n'
     print 'In this study, you will hear a series of short melodies, consisting of three to five phrases. Each melody will be followed by a single target phrase.'
     print 'Your goal is to determine, as quickly as possible,\nwhether the target phrase was present in the preceding melody.\n'
@@ -10,5 +10,13 @@ def display_main_instructions():
     print '\n'
 
 
-def display_end_message():
-    pass
+def end_message():
+    print 'Congratulations on completing the study!'
+    print 'Thank you for your participation.'
+    print '\n'
+    raw_input('Press enter to finish...')
+    
+
+def exit_message():
+    raw_input('Hit enter to exit the program...')
+    print 'The program will now exit.'

@@ -5,6 +5,7 @@ from msvcrt import getch
 import procedures as proc
 import phrase_list as pl
 import winsound
+import csv
 
 class Trial:
     def __init__(self, l, s):
@@ -36,6 +37,7 @@ class Trial:
             ids = sample(xrange(8), (self.length + 1))
             self.phrases = ids[0:self.length]
             self.target = ids[self.length]
+            self.t_position = ''
             
     def construct_melody(self):
         m = Melopy('current_melody')
@@ -46,7 +48,6 @@ class Trial:
             m.add_eighth_note(pl.PHRASE_LIST[id][0])
             m.add_eighth_note(pl.PHRASE_LIST[id][1])
             m.add_quarter_note(pl.PHRASE_LIST[id][2])
-            #m.add_quarter_rest()
         m.render()
     
     def construct_target(self):
@@ -58,13 +59,11 @@ class Trial:
         t.add_eighth_note(pl.PHRASE_LIST[id][0])
         t.add_eighth_note(pl.PHRASE_LIST[id][1])
         t.add_quarter_note(pl.PHRASE_LIST[id][2])
-        #t.add_quarter_rest()
         t.render()
 
     def get_response(self):
         print "Go!\n"
         start = time()
-        #input = raw_input()
         input = getch() # getch will only work when experiment is run in command line
         RT = (time() - start) * 1000 # record reaction time in milliseconds
         winsound.Beep(1000,500)
@@ -93,7 +92,7 @@ class Trial:
             
     def log_data(self):
         global DATA
-        td = TrialData(self.correct, self.rt, self.target, self.t_position)
+        td = [self.rt, self.correct, self.target, self.t_position]
         DATA.append(td)
         
     def run(self):
@@ -158,20 +157,6 @@ class TrialCounter:
         self.four_neg = 0
         self.five_pos = 0
         self.five_neg = 0
-
-
-class TrialData(): # used for saving trial results without extraneous trial information (e.g. 
-    def __init__(self):
-        self.accuracy = None
-        self.rt = None
-        self.target = None
-        self.t_position = None
-        
-    def __init__(self, acc, RT, target, t_position):
-        self.accuracy = acc
-        self.rt = RT
-        self.target = target
-        self.t_position = t_position
         
 
 def initialize_trial_counter():
@@ -208,3 +193,18 @@ def decide_trial_solution(melody_length):
         else:
             solution = choice([True, False])
     return solution
+
+
+def save_data():
+    global DATA
+    print 'Do you wish to save the data collected in this run of the experiment? (Y/N)\n'
+    input = getch()
+    if input.upper() == 'Y':
+        print 'Saving data...'
+        data_file = open('experiment-data.csv','a')
+        writer = csv.writer(data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
+        writer.writerows(DATA)
+        data_file.close()
+        print 'Save complete!'
+    else:
+        print 'Data not saved.'
