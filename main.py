@@ -12,5 +12,5 @@ def main():
     instr.end_message()
     tc.save_data()
     instr.exit_message()
-   
+
 main()

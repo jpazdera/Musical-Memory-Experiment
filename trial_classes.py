@@ -41,7 +41,7 @@ class Trial:
             
     def construct_melody(self):
         m = Melopy('current_melody')
-        m.tempo = 96
+        m.tempo = 112
         for id in self.phrases:
             m.add_quarter_rest()
             m.add_quarter_note('C4')
@@ -53,7 +53,7 @@ class Trial:
     def construct_target(self):
         id = self.target
         t = Melopy('target_phrase')
-        t.tempo = 96
+        t.tempo = 112
         t.add_quarter_rest()
         t.add_quarter_note('C4')
         t.add_eighth_note(pl.PHRASE_LIST[id][0])
@@ -65,7 +65,9 @@ class Trial:
         print "Go!\n"
         start = time()
         input = getch() # getch will only work when experiment is run in command line
-        RT = (time() - start) * 1000 # record reaction time in milliseconds
+        RT = time() - start # record reaction time in milliseconds
+        RT = round(RT, 3) * 1000
+        RT = int(RT)
         winsound.Beep(1000,500)
         return [input, RT]
         
@@ -82,17 +84,25 @@ class Trial:
             
     def check_response(self): # determines whether the given response was correct, and modifies self.correct appropriately
         if self.response == self.solution:
-            self.correct = "C" # C == correct
-        elif (self.response == True) and (self.solution == False):
-            self.correct = "FP" # FP == false positive
-        elif (self.response == False) and (self.solution == True):
-            self.correct = "FN" # FN == false negative
+            self.correct = True
         else:
-            self.correct = None
+            self.correct = False
             
     def log_data(self):
+        global SUBJ_NUM
+        global IS_MUSICIAN
         global DATA
-        td = [self.rt, self.correct, self.target, self.t_position]
+        # solution = 1 if the target was present, 0 if not
+        if self.solution == True:
+            sol = 1
+        else:
+            sol = 0
+        # correct = 1 if the participant's response was correct, 0 if not
+        if  self.correct == True:
+            cor = 1
+        else:
+            cor = 0
+        td = [SUBJ_NUM, IS_MUSICIAN, self.length, sol, self.rt, cor, self.target, self.t_position]
         DATA.append(td)
         
     def run(self):
@@ -165,8 +175,21 @@ def initialize_trial_counter():
 
 
 def initialize_data_log():
+    global SUBJ_NUM # the participant's id number
     global DATA
+    global IS_MUSICIAN # 1 if participant is a musician, 0 if not
+    #DATA = [['ID','is_musician','MelodyLength','Solution','ReactionTime','Accuracy','TargetPhrase','TargetPosition']]
     DATA = []
+    SUBJ_NUM = raw_input('Enter the participant\'s ID number. ')
+    mus = ''
+    print 'Is the participant a musician? (Y/N) '
+    while mus.upper() != 'Y' and mus.upper() != 'N':
+        mus = raw_input()
+    if mus.upper() == 'Y':
+        IS_MUSICIAN = 1
+    else:
+        IS_MUSICIAN = 0
+    print '\n'
 
 
 def decide_trial_solution(melody_length):
@@ -197,14 +220,147 @@ def decide_trial_solution(melody_length):
 
 def save_data():
     global DATA
-    print 'Do you wish to save the data collected in this run of the experiment? (Y/N)\n'
-    input = getch()
+    #global SUBJ_NUM
+    #global IS_MUSICIAN
+    #global MEANS
+    #MEANS = [SUBJ_NUM, IS_MUSICIAN]
+    input = ''
+    print 'Do you wish to save the data collected in this run of the experiment? (Y/N) '
+    while input.upper() != 'Y' and input.upper() != 'N':
+        input = raw_input()
     if input.upper() == 'Y':
-        print 'Saving data...'
-        data_file = open('experiment-data.csv','a')
+        print 'Saving trial data...'
+        data_file = open('Data-Logs/trial_data.csv', 'a')
         writer = csv.writer(data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
         writer.writerows(DATA)
         data_file.close()
         print 'Save complete!'
     else:
         print 'Data not saved.'
+        
+        
+'''
+def acc_by_solution(solution_cond):
+    global DATA
+    global MEANS
+    count_total = 0
+    count_correct = 0
+    for trial in DATA[1:]:
+        if trial[1] == solution_cond:
+            count_total += 1.0
+            if trial[3] == 1:
+                count_correct += 1.0
+    acc = count_correct/count_total
+    acc = round(acc, 3) * 100
+    MEANS.append(acc)
+    
+    
+def means_by_length(length_cond):
+    global DATA
+    global MEANS
+    count_total = 0
+    count_correct = 0
+    sum = 0
+    for trial in DATA[1:]:
+        if trial[0] == length_cond:
+            count_total += 1
+            if trial[3] == 1: #if correct response was given
+                sum += trial[2] #add RT to the overall sum
+                count_correct += 1.0
+    mean_RT = sum/count_correct
+    mean_RT = int(round(mean_RT, 0))
+    acc = count_correct/count_total
+    acc = round(acc, 3) * 100
+    MEANS.append(mean_RT) 
+    MEANS.append(acc)
+
+
+def means_by_condition(length_cond, solution_cond):
+    global DATA
+    global MEANS
+    count_total = 0
+    count_correct = 0
+    sum = 0
+    for trial in DATA[1:]: #ignore the first entry in DATA, i.e. the column names
+        if (trial[0] == length_cond) and (trial[1] == solution_cond):
+            count_total += 1.0
+            if trial[3] == 1: #if correct response was given
+                sum += trial[2] #add RT to the overall sum
+                count_correct += 1.0
+    mean_RT = sum/count_correct
+    mean_RT = int(round(mean_RT, 0))
+    acc = count_correct/count_total
+    acc = round(acc, 3) * 100
+    MEANS.append(mean_RT) 
+    MEANS.append(acc)
+
+
+def RT_by_target(target): # used for determining whether certain target phrases are identified more quickly
+    global DATA
+    global MEANS
+    count_correct = 0
+    sum = 0
+    for trial in DATA[1:]:
+        if trial[4] == target:
+            if trial[3] == 1:
+                sum += trial[2]
+                count_correct += 1.0
+    mean_RT = sum/count_correct
+    mean_RT = int(round(mean_RT, 0))
+    MEANS.append(mean_RT) 
+
+    
+def RT_by_t_position(t_position): # used for determining whether a serial position effect occurs
+    global DATA
+    global MEANS
+    count_correct = 0
+    sum = 0
+    for trial in DATA[1:]:
+        if trial[5] == t_position:
+            if trial[3] == 1:
+                sum += trial[2]
+                count_correct += 1.0
+    mean_RT = sum/count_correct
+    mean_RT = int(round(mean_RT, 0))
+    MEANS.append(mean_RT)
+'''
+
+'''
+        file_name = 'Data-Logs/subject-data-' + SUBJ_NUM + '.csv'
+        data_file = open(file_name,'w')
+        writer = csv.writer(data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
+        writer.writerows(DATA)
+        data_file.close()
+        print 'Trial data saved.'
+        print 'Calculating means and accuracy...'
+        #the following functions calculate and store the accuracy and mean RT of each trial type
+        #data columns will be as follows:
+        #[ID, is_musician, acc_P, acc_N, RT_3, acc_3, RT_4, acc_4, RT_5, acc_5, RT_3P, acc_3P, RT_3N, acc_3N, RT_4P, acc_4P, RT_4N, acc_4N, RT_5P, acc_5P, RT_5N, acc_5N, RT_T0,...,RT_T7, RT_TP1,..., RT_TP5]
+        acc_by_solution(1)
+        acc_by_solution(0)
+        means_by_length(3)
+        means_by_length(4)
+        means_by_length(5)
+        means_by_condition(3, 1)
+        means_by_condition(3, 0)
+        means_by_condition(4, 1)
+        means_by_condition(4, 0)
+        means_by_condition(5, 1)
+        means_by_condition(5, 0)
+        i = 0
+        while i < 8:
+            RT_by_target(i)
+            i += 1
+        i = 0
+        while i < 6:
+            RT_by_t_position(i):
+            i += 1
+        print 'Saving genderal data...'
+        data_file = open('Data-Logs/mean_data.csv', 'a')
+        writer = csv.writer(data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
+        writer.writerow(MEANS)
+        data_file.close()
+        print 'Save complete!'
+    else: #input.upper() == 'N'
+        print 'Data not saved.'
+'''
