@@ -28,20 +28,59 @@ class Trial:
         print "Reaction time: " + self.rt + " ms"
 
     def randomize_phrases(self): # chooses self.length phrases without replacement to create the melody; the target is either selected from the melody phrases (pos) or the unused phrases (neg)
+        global COUNTER
+        # randomization for positive trials:
+        x = 0
+        y = 0
         if self.solution == True:
-            self.phrases = sample(xrange(8), self.length)
-            target = sample(self.phrases, 1)
-            self.target = target[0]
-            self.t_position = self.phrases.index(target[0]) + 1 # records position of the target in the melody (i.e. first phrase = 1, etc.)
+            while (x != 1) and (y != 1):
+                x = 0
+                y = 0
+                self.phrases = sample(xrange(8), self.length)
+                for id in self.phrases:
+                    if id < 4:
+                        x = 1
+                    else:
+                        y = 1
+            if self.length == 3:
+                remaining_trials = COUNTER.three_targets
+            elif self.length == 4:
+                remaining_trials = COUNTER.four_targets
+            else: # self.length == 5: or self.length == 2: (DEPENDING ON SETTING)
+                remaining_trials = COUNTER.two_targets
+                #remaining_trials = COUNTER.five_targets
+            while True:
+                p = sample(xrange(self.length), 1) # chooses one index position in the list of 3 to 5 phrases
+                p = p[0] # gets the index value from the list returned by sample(); necessary because sample() always returns a list
+                if remaining_trials[p] != 0: # use as the target phrase only if a trial of that type remains; otherwise, reroll the index position
+                    self.target = self.phrases[p]
+                    self.t_position = p + 1 # records position of the target in the melody (i.e. first phrase = 1, etc.)
+                    if self.length == 3:
+                        COUNTER.three_targets[p] -= 1
+                    elif self.length == 4:
+                        COUNTER.four_targets[p] -= 1
+                    else: # self.length == 5: or self.length == 2: (DEPENDING ON SETTING)
+                        COUNTER.two_targets[p] -= 1
+                        #COUNTER.five_targets[p] -= 1 
+                    break
+        # randomization for negative trials:
         else:
-            ids = sample(xrange(8), (self.length + 1))
+            while (x != 1) and (y != 1):
+                x = 0
+                y = 0
+                ids = sample(xrange(8), self.length + 1)
+                for id in ids[0:self.length]:
+                    if id < 4:
+                        x = 1
+                    else:
+                        y = 1
             self.phrases = ids[0:self.length]
             self.target = ids[self.length]
             self.t_position = ''
             
     def construct_melody(self):
         m = Melopy('current_melody')
-        m.tempo = 112
+        m.tempo = 100
         for id in self.phrases:
             m.add_quarter_rest()
             m.add_quarter_note('C4')
@@ -53,7 +92,7 @@ class Trial:
     def construct_target(self):
         id = self.target
         t = Melopy('target_phrase')
-        t.tempo = 112
+        t.tempo = 100
         t.add_quarter_rest()
         t.add_quarter_note('C4')
         t.add_eighth_note(pl.PHRASE_LIST[id][0])
@@ -119,7 +158,20 @@ class Trial:
         self.record_response(resp)
         self.check_response()
         self.log_data()
-        sleep(1)
+        sleep(1.5)
+        
+    def practice_run(self): # runs trial without data logging
+        self.randomize_phrases()
+        self.construct_melody()
+        self.construct_target()
+        print 'The following melody will contain ' + str(self.length) + ' phrases...'
+        sleep(2)
+        proc.play_melody()
+        print 'Prepare to hear the target phrase...'
+        sleep(2)
+        proc.play_target()
+        self.get_response()
+        sleep(1.5)
 
 
 class Block:
@@ -139,19 +191,23 @@ class Block:
             # update trial counter according to the selected trial conditions
             if length == 3: 
                 if solution == True:
-                    COUNTER.three_pos += 1
+                    COUNTER.three_pos -= 1
                 else:
-                    COUNTER.three_neg += 1
+                    COUNTER.three_neg -= 1
             elif length == 4:
                 if solution == True:
-                    COUNTER.four_pos += 1
+                    COUNTER.four_pos -= 1
                 else:
-                    COUNTER.four_neg += 1
-            else: # if length == 5:
+                    COUNTER.four_neg -= 1
+            else: # if length == 5: or if length == 2: (DEPENDING ON SETTING)
                 if solution == True:
-                    COUNTER.five_pos += 1
+                    COUNTER.two_pos -= 1
                 else:
-                    COUNTER.five_neg += 1
+                    COUNTER.two_neg -= 1
+                #if solution == True:
+                #    COUNTER.five_pos -= 1
+                #else:
+                #    COUNTER.five_neg -= 1
 
     def run(self):
         for trial in self.trial_list:
@@ -159,26 +215,39 @@ class Block:
 
 
 class TrialCounter:
-    def __init__(self):
+    def __init__(self): # initializes counter for how many of each trial type remains
         self.remaining = 54
-        self.three_pos = 0
-        self.three_neg = 0
-        self.four_pos = 0
-        self.four_neg = 0
-        self.five_pos = 0
-        self.five_neg = 0
-        
+        self.two_pos = 10
+        self.two_neg = 10
+        self.two_targets = [5, 5]
+        self.three_pos = 9
+        self.three_neg = 9
+        self.three_targets = [3, 3, 3]
+        self.four_pos = 8
+        self.four_neg = 8
+        self.four_targets = [2, 2, 2, 2]
+        #self.five_pos = 10
+        #self.five_neg = 10
+        #self.five_targets = [2, 2, 2, 2, 2]
+
 
 def initialize_trial_counter():
     global COUNTER
     COUNTER = TrialCounter()
 
 
+def reset_counter_after_practice(): # clears any changes made to the target position counters while generating practice trials
+    global COUNTER
+    #COUNTER.two_targets = [5, 5]
+    COUNTER.three_targets = [3, 3, 3]
+    COUNTER.four_targets = [2, 2, 2, 2]
+    COUNTER.five_targets = [2, 2, 2, 2, 2]
+
+
 def initialize_data_log():
     global SUBJ_NUM # the participant's id number
     global DATA
     global IS_MUSICIAN # 1 if participant is a musician, 0 if not
-    #DATA = [['ID','is_musician','MelodyLength','Solution','ReactionTime','Accuracy','TargetPhrase','TargetPosition']]
     DATA = []
     SUBJ_NUM = raw_input('Enter the participant\'s ID number. ')
     mus = ''
@@ -195,23 +264,25 @@ def initialize_data_log():
 def decide_trial_solution(melody_length):
     global COUNTER
     if melody_length == 3:
-        if COUNTER.three_pos == 9:
+        if COUNTER.three_pos <= 0:
             solution = False
-        elif COUNTER.three_neg == 9:
+        elif COUNTER.three_neg <= 0:
             solution = True
         else:
             solution = choice([True, False])
     elif melody_length == 4:
-        if COUNTER.four_pos == 8:
+        if COUNTER.four_pos <= 0:
             solution = False
-        elif COUNTER.four_neg == 8:
+        elif COUNTER.four_neg <= 0:
             solution = True
         else:
             solution = choice([True, False])
-    else: # if melody_length == 5:
-        if COUNTER.five_pos == 10:
+    else: # if melody_length == 5: or if melody_length == 2: (DEPENDING ON SETTINGS)
+        if COUNTER.two_pos <= 0:
+        #if COUNTER.five_pos <= 0:
             solution = False
-        elif COUNTER.five_neg == 10:
+        elif COUNTER.two_neg <= 0:
+        #elif COUNTER.five_neg <= 0:
             solution = True
         else:
             solution = choice([True, False])
@@ -220,10 +291,6 @@ def decide_trial_solution(melody_length):
 
 def save_data():
     global DATA
-    #global SUBJ_NUM
-    #global IS_MUSICIAN
-    #global MEANS
-    #MEANS = [SUBJ_NUM, IS_MUSICIAN]
     input = ''
     print 'Do you wish to save the data collected in this run of the experiment? (Y/N) '
     while input.upper() != 'Y' and input.upper() != 'N':
@@ -240,6 +307,7 @@ def save_data():
         
         
 '''
+=====UNUSED CODE; MAY BE USED LATER FOR EXTENDING DATA LOGGING CAPABILITIES=====
 def acc_by_solution(solution_cond):
     global DATA
     global MEANS
@@ -323,9 +391,13 @@ def RT_by_t_position(t_position): # used for determining whether a serial positi
     mean_RT = sum/count_correct
     mean_RT = int(round(mean_RT, 0))
     MEANS.append(mean_RT)
-'''
 
-'''
+=====PREVIOUSLY USED CODE FOR CREATING SEPARATE DATA LOGS FOR EACH PARTICIPANT, WITH ONE OVERALL LOG OF MEANS, ETC.=====
+    global SUBJ_NUM
+    global IS_MUSICIAN
+    global MEANS
+    MEANS = [SUBJ_NUM, IS_MUSICIAN]
+    #[...]
         file_name = 'Data-Logs/subject-data-' + SUBJ_NUM + '.csv'
         data_file = open(file_name,'w')
         writer = csv.writer(data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
@@ -364,3 +436,4 @@ def RT_by_t_position(t_position): # used for determining whether a serial positi
     else: #input.upper() == 'N'
         print 'Data not saved.'
 '''
+

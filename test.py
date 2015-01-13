@@ -11,9 +11,9 @@ def test():
         t.run()
         t = tc.Trial(4, False)
         t.run()
-        t = tc.Trial(5, False)
+        t = tc.Trial(2, False)
         t.run()
-        t = tc.Trial(5, True)
+        t = tc.Trial(2, True)
         t.run()
         tc.save_data()
     except Exception as ex:

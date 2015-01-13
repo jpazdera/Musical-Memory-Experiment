@@ -6,10 +6,18 @@ def main_instructions():
     print 'Responses made before the phrase finishes will not be recorded.'
     print 'You will be notified (\"GO!\") when the target phrase ends,\nindicating that you may now make your response.\n'
     print 'REMEMBER: J = YES, F = NO\n'
-    raw_input('Press enter to begin!')
+    print 'The study will begin with a series of three practice trials.\n'
+    raw_input('Press enter to begin! ')
     print '\n'
 
 
+def end_practice_message():
+    print 'You have completed the three practice trials!\n'
+    print 'If you have any further questions, please ask the experimenter at this time.\n'
+    raw_input('When you are ready, press enter to continue... ')
+    print '\n'
+    
+    
 def end_message():
     print 'Congratulations on completing the study!'
     print 'Thank you for your participation.'
@@ -20,3 +28,5 @@ def end_message():
 def exit_message():
     raw_input('Hit enter to exit the program...')
     print 'The program will now exit.'
+    
+    
