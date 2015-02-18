@@ -145,10 +145,15 @@ class Trial:
         DATA.append(td)
         
     def run(self):
+        global COUNTER
+        COUNTER.remaining -= 1
         self.randomize_phrases()
         self.construct_melody()
         self.construct_target()
-        print 'The following melody will contain ' + str(self.length) + ' phrases...'
+        if COUNTER.remaining == 1:
+            print 'The following melody will contain ' + str(self.length) + ' phrases... (1 trial remaining)'
+        else:
+            print 'The following melody will contain ' + str(self.length) + ' phrases... (' + str(COUNTER.remaining) + ' trials remaining)'
         sleep(2)
         proc.play_melody()
         print 'Prepare to hear the target phrase...'
@@ -212,6 +217,7 @@ class Block:
     def run(self):
         for trial in self.trial_list:
             trial.run()
+            #ADD TRIAL DELETION AFTER IT RUNS!!!
 
 
 class TrialCounter:
@@ -305,6 +311,17 @@ def save_data():
     else:
         print 'Data not saved.'
         
+        
+def emergency_save():
+    global DATA
+    input = ''
+    print 'Error detected. Saving existing trial data to emergency file. '
+    data_file = open('Data-Logs/emergency_save_data.csv', 'a')
+    writer = csv.writer(data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
+    writer.writerows(DATA)
+    data_file.close()
+    print 'Save complete!'   
+       
         
 '''
 =====UNUSED CODE; MAY BE USED LATER FOR EXTENDING DATA LOGGING CAPABILITIES=====

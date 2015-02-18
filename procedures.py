@@ -34,6 +34,10 @@ def run_practice_trials():
     
 def run_procedure():
     global TRIAL_BLOCKS
+    #i = 0
+    #while i < 6:
+    #    TRIAL_BLOCKS[i].run()
+    #    i += 1
     for block in TRIAL_BLOCKS:
         block.run()
 

@@ -15,8 +15,9 @@ def main():
         instr.end_message()
         tc.save_data()
         instr.exit_message()
-    except Exception as ex:
-        print ex
+    except Exception as e:
+        print e
+        tc.emergency_save()
         raw_input()
 
 main()
